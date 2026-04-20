@@ -9,8 +9,6 @@ public class SuperConstant {
     public static final String TOKEN_TYPE = "Bearer";
 
     public static final String BEARER_PREFIX =  "Bearer ";
-
-    public static final String DEFAULT_ROLE = "ROLE_CUSTOMER";
-
+    
 
 }

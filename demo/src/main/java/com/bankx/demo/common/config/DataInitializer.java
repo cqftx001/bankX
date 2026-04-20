@@ -1,12 +1,13 @@
 package com.bankx.demo.common.config;
 
 import com.bankx.demo.common.enums.ActionEnum;
-import com.bankx.demo.common.enums.PermissionEnum;
 import com.bankx.demo.common.enums.ResourceEnum;
 import com.bankx.demo.common.enums.RoleEnum;
+import com.bankx.demo.user.entity.Permission;
+import com.bankx.demo.user.entity.Role;
+import com.bankx.demo.user.entity.RolePermission;
 import com.bankx.demo.user.repository.PermissionRepository;
 import com.bankx.demo.user.repository.RoleRepository;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -16,6 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * hardcode resources + permissions for each role
+ * Would seed automatically while server start
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -45,24 +50,34 @@ public class DataInitializer implements CommandLineRunner {
     );
 
     // Role -> which permissions it gets: "RESOURCE:ACTION"
-    private static final Map<RoleEnum, List<ActionEnum>> ROLE_PERMISSIONS = Map.of(
-            RoleEnum.CUSTOMER, List.of(
+    private static final Map<RoleEnum, List<String>> ROLE_PERMISSIONS = Map.of(
+            RoleEnum.ROLE_CUSTOMER, List.of(
                     "ACCOUNT:READ_OWN", "ACCOUNT:CREATE",
                     "TRANSACTION:CREATE", "TRANSACTION:READ_OWN"
             ),
-            RoleEnum.TELLER, List.of(
+            RoleEnum.ROLE_TELLER, List.of(
                     "ACCOUNT:READ_OWN", "ACCOUNT:READ_ALL", "ACCOUNT:CREATE",
                     "TRANSACTION:CREATE", "TRANSACTION:READ_OWN", "TRANSACTION:READ_ALL"
             ),
-            RoleEnum.MANAGER, List.of(
+            RoleEnum.ROLE_MANAGER, List.of(
                     "ACCOUNT:READ_OWN", "ACCOUNT:READ_ALL", "ACCOUNT:CREATE", "ACCOUNT:FREEZE",
                     "TRANSACTION:CREATE", "TRANSACTION:READ_OWN", "TRANSACTION:READ_ALL",
                     "AUDIT_LOG:READ"
             ),
-            RoleEnum.ADMIN, List.of(
-                    "ACCOUNT:READ_OWN", "ACCOUNT:READ_ALL", "ACCOUNT:CREATE", "ACCOUNT:FREEZE",
-                    "TRANSACTION:CREATE", "TRANSACTION:READ_OWN", "TRANSACTION:READ_ALL",
-                    "AUDIT_LOG:READ", "USER:MANAGE"
+            RoleEnum.ROLE_ADMIN, List.of(
+                    // Account
+                    "ACCOUNT:READ_OWN", "ACCOUNT:READ_ALL", "ACCOUNT:CREATE",
+                    "ACCOUNT:FREEZE", "ACCOUNT:UNFREEZE", "ACCOUNT:CLOSE", "ACCOUNT:UPDATE",
+                    // Transaction
+                    "TRANSACTION:CREATE", "TRANSACTION:READ_OWN",
+                    "TRANSACTION:READ_ALL", "TRANSACTION:REVERSE",
+                    // Audit
+                    "AUDIT_LOG:READ", "AUDIT_LOG:EXPORT",
+                    // User 管理 — 细粒度，每个操作单独控制
+                    "USER:READ_OWN", "USER:READ_ALL", "USER:CREATE",
+                    "USER:UPDATE", "USER:DELETE", "USER:ASSIGN_ROLE", "USER:FREEZE",
+                    // Profile
+                    "USER_PROFILE:READ_OWN", "USER_PROFILE:UPDATE"
             )
     );
 
@@ -89,7 +104,7 @@ public class DataInitializer implements CommandLineRunner {
                     .orElseGet(() -> {
                         Role r = new Role();
                         r.setName(roleName);
-                        r.setDescription(roleName.replace("ROLE_", "").toLowerCase());
+                        r.setDescription(roleName.name().replace("ROLE_", "").toLowerCase());
                         r.setEnabled(true);
                         roleRepository.save(r);
                         log.debug("Created role: {}", roleName);
@@ -99,9 +114,12 @@ public class DataInitializer implements CommandLineRunner {
             // Assign permissions that aren't already linked
             permKeys.forEach(key -> {
                 String[] parts = key.split(":");
-                permissionRepository.findByResourceAndAction(parts[0], parts[1])
+                ResourceEnum resource = ResourceEnum.valueOf(parts[0]);
+                ActionEnum action = ActionEnum.valueOf(parts[1]);
+                permissionRepository.findByResourceAndAction(resource, action)
                         .ifPresent(permission -> {
                             boolean alreadyLinked = role.getRolePermissions().stream()
+                                    .filter(rp -> rp.getPermission() != null)
                                     .anyMatch(rp -> rp.getPermission().equals(permission));
                             if (!alreadyLinked) {
                                 RolePermission rp = new RolePermission();
@@ -113,5 +131,13 @@ public class DataInitializer implements CommandLineRunner {
                         });
             });
         });
+    }
+
+    @Override
+    @Transactional
+    public void run(String... args) throws Exception {
+        log.info("Seeding data...");
+        seedPermissions();
+        seedRoles();
     }
 }

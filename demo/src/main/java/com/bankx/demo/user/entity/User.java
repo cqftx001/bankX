@@ -4,13 +4,15 @@ import com.bankx.demo.common.base.BaseEntity;
 import com.bankx.demo.common.enums.UserStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
 @Schema(description = "User")

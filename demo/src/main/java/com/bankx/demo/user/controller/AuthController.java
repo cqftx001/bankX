@@ -2,9 +2,9 @@ package com.bankx.demo.user.controller;
 
 import com.bankx.demo.common.base.ResponseResult;
 import com.bankx.demo.common.utils.RequestUtils;
-import com.bankx.demo.user.entity.AuthResponse;
-import com.bankx.demo.user.entity.LoginRequest;
-import com.bankx.demo.user.entity.RegisterRequest;
+import com.bankx.demo.user.vo.AuthResponse;
+import com.bankx.demo.user.dto.LoginRequest;
+import com.bankx.demo.user.dto.RegisterRequest;
 import com.bankx.demo.user.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

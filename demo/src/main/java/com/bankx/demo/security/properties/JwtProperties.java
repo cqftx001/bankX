@@ -3,6 +3,7 @@ package com.bankx.demo.security.properties;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
 @NoArgsConstructor
 @ToString
 @Configuration
-@ConfigurationProperties(prefix = "bankx.framework.jwt")
+@ConfigurationProperties(prefix = "jwt")
 public class JwtProperties {
     /**
      * 签名密钥

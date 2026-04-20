@@ -1,4 +1,4 @@
-package com.bankx.demo.user.entity;
+package com.bankx.demo.user.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -18,7 +18,7 @@ public class AuthResponse {
     @Schema(description = "JWT token type")
     private final String tokenType;
 
-    @Schema(description = "JWT token expiration")
+    @Schema(description = "JWT token expiration", example = "3600000")
     private final long expiration;
 
     @Schema(description = "User ID")

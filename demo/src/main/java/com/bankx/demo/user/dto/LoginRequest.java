@@ -1,4 +1,4 @@
-package com.bankx.demo.user.entity;
+package com.bankx.demo.user.dto;
 
 import com.bankx.demo.common.base.BaseRequest;
 import io.swagger.v3.oas.annotations.media.Schema;

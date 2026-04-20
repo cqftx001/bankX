@@ -54,7 +54,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private Collection<? extends GrantedAuthority> buildAuthorities(User user) {
         // Role-level authorities
         var roleAuthorities = user.getUserRoles().stream()
-                .map(userRoles -> new SimpleGrantedAuthority(userRoles.getRole().getName()))
+                .map(userRoles -> new SimpleGrantedAuthority(userRoles.getRole().getName().name()))
                 .collect(Collectors.toSet());
 
         // Permission-level authorities from all assigned roles

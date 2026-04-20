@@ -33,7 +33,7 @@ public class ResponseResult<T> {
      * 每次请求的唯一追踪 ID。
      * request.setAttribute("requestId", requestId);
      */
-    @Schema(description = "Request trace ID", example = "abc-xyz-123")
+    @Schema(description = "Request trace ID")
     private final String requestId;
 
     /**
@@ -125,7 +125,6 @@ public class ResponseResult<T> {
     /**
      * Response Template
      * @param <T>
-
     @GetMapping("/{id}")
     public ResponseEntity<ResponseResult<UserVo>> getUserById(
             @PathVariable UUID id,

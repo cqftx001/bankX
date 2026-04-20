@@ -3,10 +3,12 @@ package com.bankx.demo.user.entity;
 import com.bankx.demo.common.base.BaseEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(
         name = "role_permissions",
@@ -20,6 +22,7 @@ public class RolePermission extends BaseEntity {
 
     // —— Relationships ——————————————————————————————————————————————————————————
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @Enumerated(EnumType.STRING)
     @JoinColumn(name = "role_id", nullable = false, updatable = false)
     private Role role;
 
