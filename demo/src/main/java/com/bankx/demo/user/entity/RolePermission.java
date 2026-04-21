@@ -22,7 +22,6 @@ public class RolePermission extends BaseEntity {
 
     // —— Relationships ——————————————————————————————————————————————————————————
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @Enumerated(EnumType.STRING)
     @JoinColumn(name = "role_id", nullable = false, updatable = false)
     private Role role;
 

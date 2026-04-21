@@ -38,6 +38,14 @@ public class JwtUtil {
                 .signWith(signingKey())
                 .compact();
     }
+
+    // Get TTL (Sec)
+    public long getRemainingTtl(String token){
+        Date expiration = extractExpiration(token);
+        long remaining = expiration.getTime() - System.currentTimeMillis();
+        return remaining > 0 ? remaining / 1000 : 0;
+    }
+
     // ─── Token parsing ────────────────────────────────────────
     public UUID extractUserId(String token){
         return UUID.fromString(parseClaims(token).getSubject());
@@ -51,6 +59,9 @@ public class JwtUtil {
         return parseClaims(token).get("roles", String.class);
     }
 
+    public Date extractExpiration(String token){
+        return parseClaims(token).getExpiration();
+    }
     // ─── Token extraction from request ───────────────────────────
     public String extractToken(HttpServletRequest request){
         String header = request.getHeader(SuperConstant.AUTHORIZATION_HEADER);

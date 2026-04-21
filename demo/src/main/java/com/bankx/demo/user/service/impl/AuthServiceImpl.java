@@ -16,6 +16,8 @@ import com.bankx.demo.user.service.AuthService;
 import com.bankx.demo.user.vo.AuthResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,6 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,6 +43,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
+    private final StringRedisTemplate redisTemplate;
 
     //--- register ---
     @Override
@@ -88,10 +93,20 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), RoleEnum.ROLE_CUSTOMER.name());
 
+        log.info("Token TTL from properties: {}ms", jwtProperties.getTtl());
+        // 存入 Redis，key = "token:{userId}", TTL = jwtProperties.getTtl() 毫秒
+        redisTemplate.opsForValue().set(
+                SuperConstant.REDIS_TOKEN_PREFIX + user.getId(),
+                token,
+                jwtProperties.getTtl(),
+                TimeUnit.MILLISECONDS
+        );
+
         log.info("Customer registered: userId={}, email={}", user.getId(), user.getEmail());
 
         return new AuthResponse(token, SuperConstant.TOKEN_TYPE, jwtProperties.getTtl(), user.getId(), user.getEmail(), RoleEnum.ROLE_CUSTOMER.name());
     }
+
     //--- login ---
     @Override
     @Transactional
@@ -115,9 +130,39 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), roles);
 
+
+        redisTemplate.opsForValue().set(
+                SuperConstant.REDIS_TOKEN_PREFIX + user.getId(),
+                token,
+                jwtProperties.getTtl(),
+                TimeUnit.MILLISECONDS);
+
         log.info("User logged in: userId={}, email={}", user.getId(), user.getEmail());
 
         return new AuthResponse(token, SuperConstant.TOKEN_TYPE, jwtProperties.getTtl(), user.getId(), user.getEmail(), roles);
+    }
 
+    @Override
+    public void logout(String token) {
+        if(!jwtUtil.isValid(token)){
+            throw new BaseException(ErrorCode.UNAUTHORIZED, "Invalid token");
+        }
+
+        UUID userId = jwtUtil.extractUserId(token);
+        long remainingTtl = jwtUtil.getRemainingTtl(token);
+
+        // 删除 Redis 中的 token
+        redisTemplate.delete(SuperConstant.REDIS_TOKEN_PREFIX + userId);
+
+        // 把token加入黑名单, 设置TTL为剩余的TTL
+        if(remainingTtl > 0){
+            redisTemplate.opsForValue().set(
+                    SuperConstant.REDIS_BLACKLIST_PREFIX + token,
+                    "1",
+                    remainingTtl,
+                    TimeUnit.SECONDS
+            );
+        }
+        log.info("User logged out: userId={}", userId);
     }
 }

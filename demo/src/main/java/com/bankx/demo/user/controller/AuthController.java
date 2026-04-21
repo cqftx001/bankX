@@ -1,6 +1,9 @@
 package com.bankx.demo.user.controller;
 
 import com.bankx.demo.common.base.ResponseResult;
+import com.bankx.demo.common.enums.ErrorCode;
+import com.bankx.demo.common.exception.BaseException;
+import com.bankx.demo.common.utils.JwtUtil;
 import com.bankx.demo.common.utils.RequestUtils;
 import com.bankx.demo.user.vo.AuthResponse;
 import com.bankx.demo.user.dto.LoginRequest;
@@ -13,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtUtil jwtUtil;
 
     /**
      * POST /api/v1/auth/register
@@ -65,6 +70,22 @@ public class AuthController {
         AuthResponse authResponse = authService.login(req);
 
         return ResponseEntity.ok(ResponseResult.success(authResponse, requestId));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Logout and invalidate token")
+    public ResponseEntity<ResponseResult<Void>> logout(
+            HttpServletRequest request) {
+
+        String requestId = RequestUtils.getOrCreateRequestId(request);
+        String token = jwtUtil.extractToken(request);
+
+        if (token == null) {
+            throw new BaseException(ErrorCode.UNAUTHORIZED, "No token provided");
+        }
+
+        authService.logout(token);
+        return ResponseEntity.ok(ResponseResult.success(requestId));
     }
 
 }

@@ -11,4 +11,6 @@ public interface AuthService {
     AuthResponse register(@Valid RegisterRequest req);
 
     AuthResponse login(LoginRequest req);
+
+    void logout(String token);
 }

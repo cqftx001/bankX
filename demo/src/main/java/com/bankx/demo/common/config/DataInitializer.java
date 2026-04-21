@@ -7,6 +7,7 @@ import com.bankx.demo.user.entity.Permission;
 import com.bankx.demo.user.entity.Role;
 import com.bankx.demo.user.entity.RolePermission;
 import com.bankx.demo.user.repository.PermissionRepository;
+import com.bankx.demo.user.repository.RolePermissionRepository;
 import com.bankx.demo.user.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
+    private final RolePermissionRepository rolePermissionRepository;
 
     // Permission definitions: resource → list of actions
     private static final Map<ResourceEnum, List<ActionEnum>> PERMISSION_DEFINITIONS = Map.of(
@@ -106,27 +108,24 @@ public class DataInitializer implements CommandLineRunner {
                         r.setName(roleName);
                         r.setDescription(roleName.name().replace("ROLE_", "").toLowerCase());
                         r.setEnabled(true);
-                        roleRepository.save(r);
-                        log.debug("Created role: {}", roleName);
-                        return r;
+                        return roleRepository.save(r);
                     });
 
-            // Assign permissions that aren't already linked
             permKeys.forEach(key -> {
                 String[] parts = key.split(":");
                 ResourceEnum resource = ResourceEnum.valueOf(parts[0]);
                 ActionEnum action = ActionEnum.valueOf(parts[1]);
+
                 permissionRepository.findByResourceAndAction(resource, action)
                         .ifPresent(permission -> {
-                            boolean alreadyLinked = role.getRolePermissions().stream()
-                                    .filter(rp -> rp.getPermission() != null)
-                                    .anyMatch(rp -> rp.getPermission().equals(permission));
-                            if (!alreadyLinked) {
+                            // 直接查 DB，不走 LAZY 加载
+                            if (!rolePermissionRepository.existsByRoleIdAndPermissionId(
+                                    role.getId(), permission.getId())) {
                                 RolePermission rp = new RolePermission();
                                 rp.setRole(role);
                                 rp.setPermission(permission);
-                                role.getRolePermissions().add(rp);
-                                roleRepository.save(role);
+                                rolePermissionRepository.save(rp); // 直接存
+                                log.debug("Linked {}:{} → {}", resource, action, roleName);
                             }
                         });
             });
@@ -139,5 +138,6 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seeding data...");
         seedPermissions();
         seedRoles();
+        log.info("DataInitializer completed");
     }
 }
