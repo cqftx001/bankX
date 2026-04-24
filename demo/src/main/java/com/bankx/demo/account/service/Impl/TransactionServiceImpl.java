@@ -13,11 +13,15 @@ import com.bankx.demo.common.enums.*;
 import com.bankx.demo.common.exception.BaseException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -30,9 +34,15 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100)
+    )
     public TransactionVo deposit(UUID userId, DepositRequest request) {
         // 幂等检查
-        checkIdempotency(request.getIdempotencyKey());
+        Optional<TransactionVo> existing = checkIdempotency(request.getIdempotencyKey(), userId);
+        if(existing.isPresent()) return existing.get();
 
         Account toAccount = findActiveAccount(request.getToAccountId());
         validateAccountOwner(toAccount, userId);
@@ -61,9 +71,16 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100)
+    )
     public TransactionVo withdraw(UUID userId, WithDrawRequest request) {
         // 幂等检查
-        checkIdempotency(request.getIdempotencyKey());
+        Optional<TransactionVo> existing = checkIdempotency(request.getIdempotencyKey(), userId);
+        if(existing.isPresent()) return existing.get();
+
         Account fromAccount = findActiveAccount(request.getFromAccountId());
         validateAccountOwner(fromAccount, userId);
 
@@ -95,16 +112,32 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100)
+    )
     public TransactionVo transfer(UUID userId, TransferRequest request) {
-        checkIdempotency(request.getIdempotencyKey());
+
+        Optional<TransactionVo> existing = checkIdempotency(request.getIdempotencyKey(), userId);
+        if(existing.isPresent()) return existing.get();
+
 
         if(request.getFromAccountId().equals(request.getToAccountId())){
             throw new BaseException(ErrorCode.INVALID_REQUEST,
                     "Cannot transfer to the same account");
         }
 
-        Account fromAccount = findActiveAccount(request.getFromAccountId());
-        Account toAccount = findActiveAccount(request.getToAccountId());
+        // Avoid deadlock
+        UUID firstId = request.getFromAccountId().compareTo(request.getToAccountId()) < 0 ? request.getFromAccountId() : request.getToAccountId();
+        UUID secondId = request.getFromAccountId().compareTo(request.getToAccountId()) < 0 ? request.getToAccountId() : request.getFromAccountId();
+
+        Account firstAccount = findActiveAccount(firstId);
+        Account secondAccount = findActiveAccount(secondId);
+
+        Account fromAccount = firstId.equals(request.getFromAccountId()) ? firstAccount : secondAccount;
+        Account toAccount = firstId.equals(request.getToAccountId()) ? secondAccount : firstAccount;
+
         validateAccountOwner(fromAccount, userId);
 
         if (fromAccount.getBalance().compareTo(request.getAmount()) < 0) {
@@ -151,16 +184,17 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     // -- helper --
-    private void checkIdempotency(String idempotencyKey) {
-        if (transactionRepository.findByIdempotencyKey(idempotencyKey).isPresent()) {
-            throw new BaseException(ErrorCode.DUPLICATE_REQUEST,
-                    "Duplicate transaction: idempotency key already used");
-        }
+    // Idempotency key check -> return existing idempotency key
+    private Optional<TransactionVo> checkIdempotency(String idempotencyKey, UUID viewerAccountId) {
+
+        return transactionRepository.findByIdempotencyKey(idempotencyKey)
+                .map(transaction -> toVO(transaction, viewerAccountId));
+
     }
 
     private Account findActiveAccount(UUID accountId){
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+                .orElseThrow(() -> new BaseException(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found"));
 
         if(account.getStatus() != AccountStatus.ACTIVE){
             throw new BaseException(ErrorCode.INVALID_REQUEST,

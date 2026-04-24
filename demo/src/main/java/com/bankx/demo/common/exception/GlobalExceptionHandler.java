@@ -6,7 +6,10 @@ import com.bankx.demo.common.enums.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -97,6 +100,52 @@ public class GlobalExceptionHandler {
                 .body(ResponseResult.fail(
                         ErrorCode.VALIDATION_ERROR.getCode(),
                         ex.getMessage(),
+                        requestId
+                ));
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ResponseResult<Void>> handleOptimisticLockException(
+            ObjectOptimisticLockingFailureException ex,
+            HttpServletRequest request){
+
+        String requestId = RequestUtils.getOrCreateRequestId(request);
+        log.warn("Optimistic lock conflict. requestId={}, message={}",
+                requestId, ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ResponseResult.fail(
+                        ErrorCode.OPTIMISTIC_LOCK_CONFLICT.getCode(),
+                        "Transaction conflict, please try again",
+                        requestId
+                ));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ResponseResult<Void>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request) {
+
+        String requestId = RequestUtils.getOrCreateRequestId(request);
+
+        // 判断是否是幂等key冲突
+        if (ex.getMessage() != null && ex.getMessage().contains("idempotency_key")) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(ResponseResult.fail(
+                            ErrorCode.DUPLICATE_REQUEST.getCode(),
+                            "Duplicate transaction: idempotency key already used",
+                            requestId
+                    ));
+        }
+
+        // 其他数据库约束冲突
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ResponseResult.fail(
+                        ErrorCode.DUPLICATE_REQUEST.getCode(),
+                        "Data conflict",
                         requestId
                 ));
     }

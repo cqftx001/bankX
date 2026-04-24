@@ -5,6 +5,7 @@ import io.micrometer.common.util.StringUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -20,6 +21,7 @@ import java.time.LocalDate;
         })
 @SQLRestriction("deleted = false")
 @Schema(description = "Customer personal and contact information")
+@RequiredArgsConstructor
 public class UserProfile extends BaseEntity {
 
     //—— Relationships ——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
