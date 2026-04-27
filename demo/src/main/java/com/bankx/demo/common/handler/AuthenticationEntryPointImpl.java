@@ -1,7 +1,7 @@
 package com.bankx.demo.common.handler;
 
 import com.bankx.demo.common.enums.ErrorCode;
-import com.bankx.demo.common.utils.JwtUtil;
+import com.bankx.demo.common.utils.JwtUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +35,7 @@ public class AuthenticationEntryPointImpl implements AuthenticationEntryPoint {
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
 
-        String requestId = JwtUtil.resolveRequestId(request);
+        String requestId = JwtUtils.resolveRequestId(request);
 
         log.warn("Unauthenticated access. requestId={}, method={}, uri={}",
                 requestId, request.getMethod(), request.getRequestURI());

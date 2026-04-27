@@ -4,6 +4,7 @@ import com.bankx.demo.common.base.VersionedEntity;
 import com.bankx.demo.common.enums.AccountStatus;
 import com.bankx.demo.common.enums.AccountType;
 import com.bankx.demo.common.enums.CurrencyEnum;
+import com.bankx.demo.transaction.entity.Transaction;
 import com.bankx.demo.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;

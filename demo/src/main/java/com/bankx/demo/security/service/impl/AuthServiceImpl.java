@@ -5,7 +5,7 @@ import com.bankx.demo.common.enums.ErrorCode;
 import com.bankx.demo.common.enums.RoleEnum;
 import com.bankx.demo.common.enums.UserStatus;
 import com.bankx.demo.common.exception.BaseException;
-import com.bankx.demo.common.utils.JwtUtil;
+import com.bankx.demo.common.utils.JwtUtils;
 import com.bankx.demo.security.Entity.Role;
 import com.bankx.demo.security.Entity.UserRole;
 import com.bankx.demo.security.properties.JwtProperties;
@@ -46,7 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
+    private final JwtUtils jwtUtil;
     private final JwtProperties jwtProperties;
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;

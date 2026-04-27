@@ -2,7 +2,7 @@ package com.bankx.demo.security.filter;
 
 import com.bankx.demo.common.constant.SuperConstant;
 import com.bankx.demo.common.enums.ErrorCode;
-import com.bankx.demo.common.utils.JwtUtil;
+import com.bankx.demo.common.utils.JwtUtils;
 import com.bankx.demo.security.model.CustomUserDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -31,7 +31,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
+    private final JwtUtils jwtUtil;
     private final StringRedisTemplate redisTemplate;
 
 
@@ -54,7 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 body.put("message", "Token has been invalidated, please login again");
                 body.put("data", null);
                 body.put("timestamp", LocalDateTime.now().toString());
-                body.put("requestId", JwtUtil.resolveRequestId(request));
+                body.put("requestId", JwtUtils.resolveRequestId(request));
 
                 new ObjectMapper()
                         .registerModule(new JavaTimeModule())

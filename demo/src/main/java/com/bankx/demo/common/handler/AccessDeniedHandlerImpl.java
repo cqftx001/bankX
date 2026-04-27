@@ -1,7 +1,7 @@
 package com.bankx.demo.common.handler;
 
 import com.bankx.demo.common.enums.ErrorCode;
-import com.bankx.demo.common.utils.JwtUtil;
+import com.bankx.demo.common.utils.JwtUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.ServletException;
@@ -35,7 +35,7 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
                        HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException, ServletException {
 
-        String requestId = JwtUtil.resolveRequestId(request);
+        String requestId = JwtUtils.resolveRequestId(request);
 
         log.warn("Access denied. requestId={}, principal={}, method={}, uri={}",
                 requestId,

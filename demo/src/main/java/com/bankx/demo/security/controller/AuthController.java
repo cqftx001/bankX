@@ -3,7 +3,7 @@ package com.bankx.demo.security.controller;
 import com.bankx.demo.common.base.ResponseResult;
 import com.bankx.demo.common.enums.ErrorCode;
 import com.bankx.demo.common.exception.BaseException;
-import com.bankx.demo.common.utils.JwtUtil;
+import com.bankx.demo.common.utils.JwtUtils;
 import com.bankx.demo.common.utils.RequestUtils;
 import com.bankx.demo.security.vo.AuthResponse;
 import com.bankx.demo.security.dto.LoginRequest;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtUtil jwtUtil;
+    private final JwtUtils jwtUtil;
 
     /**
      * POST /api/v1/auth/register

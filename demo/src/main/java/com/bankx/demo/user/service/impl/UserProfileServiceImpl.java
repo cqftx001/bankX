@@ -3,7 +3,7 @@ package com.bankx.demo.user.service.impl;
 import com.bankx.demo.common.constant.SuperConstant;
 import com.bankx.demo.common.enums.ErrorCode;
 import com.bankx.demo.common.exception.BaseException;
-import com.bankx.demo.common.utils.JwtUtil;
+import com.bankx.demo.common.utils.JwtUtils;
 import com.bankx.demo.security.properties.JwtProperties;
 import com.bankx.demo.security.vo.AuthResponse;
 import com.bankx.demo.user.UserProfileVo;
@@ -37,7 +37,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserRepository userRepository;
     private final StringRedisTemplate redisTemplate;
-    private final JwtUtil jwtUtil;
+    private final JwtUtils jwtUtil;
     private final JwtProperties jwtProperties;
     private final JavaMailSender mailSender;
 
