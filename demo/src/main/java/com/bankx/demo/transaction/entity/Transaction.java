@@ -11,6 +11,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -64,4 +66,24 @@ public class Transaction extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_account_id", nullable = true)
     private Account toAccount;
+
+    @Column(name = "reversed", nullable = false)
+    private Boolean reversed = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "original_transaction_id")
+    private Transaction originalTransaction;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reversal_transaction_id")
+    private Transaction reversalTransaction;
+
+    @Column(name = "reversal_reason", length = 255)
+    private String reversalReason;
+
+    @Column(name = "reversed_at")
+    private LocalDateTime reversedAt;
+
+    @Column(name = "reversed_by")
+    private UUID reversedBy;
 }

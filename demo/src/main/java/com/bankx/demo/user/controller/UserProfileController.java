@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "User Profile", description = "User Profile API")
 public class UserProfileController {
 
-    private UserProfileService userProfileService;
+    private final UserProfileService userProfileService;
 
 
     @GetMapping

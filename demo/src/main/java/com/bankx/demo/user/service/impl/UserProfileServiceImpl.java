@@ -22,7 +22,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -102,12 +102,17 @@ public class UserProfileServiceImpl implements UserProfileService {
         map.put("email", newEmail);
         map.put("code", code);
 
-        redisTemplate.opsForValue().set(
-                changeKey,
-                new ObjectMapper().writeValueAsString(map),
-                SuperConstant.EMAIL_CODE_TTL,
-                TimeUnit.SECONDS
-        );
+        try {
+            redisTemplate.opsForValue().set(
+                    changeKey,
+                    new ObjectMapper().writeValueAsString(map),
+                    SuperConstant.EMAIL_CODE_TTL,
+                    TimeUnit.SECONDS
+            );
+        } catch (Exception e) {
+            throw new BaseException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "Failed to serialize email change data");
+        }
 
         redisTemplate.opsForValue().set(
                 limitKey, "1", SuperConstant.EMAIL_LIMIT_TTL, TimeUnit.SECONDS

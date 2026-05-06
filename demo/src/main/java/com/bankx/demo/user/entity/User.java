@@ -2,7 +2,7 @@ package com.bankx.demo.user.entity;
 
 import com.bankx.demo.common.base.BaseEntity;
 import com.bankx.demo.common.enums.UserStatus;
-import com.bankx.demo.security.Entity.UserRole;
+import com.bankx.demo.security.entity.UserRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Getter;

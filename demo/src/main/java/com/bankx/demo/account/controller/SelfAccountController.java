@@ -20,14 +20,18 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ *                     "ACCOUNT:READ_OWN", "ACCOUNT:CREATE",
+ */
 
 @RestController
-@RequestMapping("/api/v1/accounts")
 @RequiredArgsConstructor
-@Tag(name = "Accounts", description = "Accounts API")
-public class AccountController {
+@RequestMapping("/api/v1/me/accounts")
+@Tag(name = "Account Controller", description = "Self Accounts APIs")
+public class SelfAccountController {
 
     private final AccountService accountService;
+
 
     @PostMapping
     @Operation(summary = "Create account")
@@ -47,7 +51,7 @@ public class AccountController {
     @GetMapping
     @Operation(summary = "Get my accounts")
     @PreAuthorize("hasAuthority('ACCOUNT:READ_OWN')")
-    public ResponseEntity<ResponseResult<List<AccountVo>>> geyMyAccounts(
+    public ResponseEntity<ResponseResult<List<AccountVo>>> getMyAccounts(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             HttpServletRequest request
     ){
@@ -70,58 +74,5 @@ public class AccountController {
         AccountVo vo = accountService.getAccountById(userDetails.getUserId(), accountId);
         return ResponseEntity.ok(ResponseResult.success(vo, requestId));
     }
-
-    @PatchMapping("/{accountId}/freeze")
-    @Operation(summary = "Freeze account")
-    @PreAuthorize("hasAuthority('ACCOUNT:FREEZE')")
-    public ResponseEntity<ResponseResult<AccountVo>> freezeAccount(
-            @PathVariable UUID accountId,
-            HttpServletRequest request
-    ){
-
-        String requestId = RequestUtils.getOrCreateRequestId(request);
-        AccountVo vo = accountService.freezeAccount(accountId);
-        return ResponseEntity.ok(ResponseResult.success(vo, requestId));
-    }
-
-    @PatchMapping("/{accountId}/unfreeze")
-    @Operation(summary = "Unfreeze account")
-    @PreAuthorize("hasAuthority('ACCOUNT:UNFREEZE')")
-    public ResponseEntity<ResponseResult<AccountVo>> unfreezeAccount(
-            @PathVariable UUID accountId,
-            HttpServletRequest request
-    ){
-
-        String requestId = RequestUtils.getOrCreateRequestId(request);
-        AccountVo vo = accountService.unfreezeAccount(accountId);
-        return ResponseEntity.ok(ResponseResult.success(vo, requestId));
-    }
-
-    @PatchMapping("/{accountId}/close")
-    @Operation(summary = "Close account")
-    @PreAuthorize("hasAuthority('ACCOUNT:CLOSE')")
-    public ResponseEntity<ResponseResult<AccountVo>> closeAccount(
-            @PathVariable UUID accountId,
-            HttpServletRequest request
-    ){
-
-        String requestId = RequestUtils.getOrCreateRequestId(request);
-        AccountVo vo = accountService.closeAccount(accountId);
-        return ResponseEntity.ok(ResponseResult.success(vo, requestId));
-    }
-
-    @PatchMapping("/{accountId}/unclose")
-    @Operation(summary = "Unclose account")
-    @PreAuthorize("hasAuthority('ACCOUNT:CLOSE')")
-    public ResponseEntity<ResponseResult<AccountVo>> uncloseAccount(
-            @PathVariable UUID accountId,
-            HttpServletRequest request
-    ){
-
-        String requestId = RequestUtils.getOrCreateRequestId(request);
-        AccountVo vo = accountService.uncloseAccount(accountId);
-        return ResponseEntity.ok(ResponseResult.success(vo, requestId));
-    }
-
 
 }

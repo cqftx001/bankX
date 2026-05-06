@@ -121,21 +121,4 @@ public class ResponseResult<T> {
                 .requestId(requestId)
                 .build();
     }
-
-    /**
-     * Response Template
-     * @param <T>
-    @GetMapping("/{id}")
-    public ResponseEntity<ResponseResult<UserVo>> getUserById(
-            @PathVariable UUID id,
-            HttpServletRequest request
-    ) {
-        UserVo userVo = userService.getUserById(id);
-
-        String requestId = (String) request.getAttribute("requestId");
-
-        return ResponseEntity.ok(ResponseResult.success(userVo, requestId));
-    }
-
-     */
 }

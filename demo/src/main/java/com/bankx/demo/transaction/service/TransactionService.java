@@ -1,10 +1,7 @@
 package com.bankx.demo.transaction.service;
 
 import com.bankx.demo.common.base.PageResult;
-import com.bankx.demo.transaction.dto.DepositRequest;
-import com.bankx.demo.transaction.dto.TransactionSearchRequest;
-import com.bankx.demo.transaction.dto.TransferRequest;
-import com.bankx.demo.transaction.dto.WithDrawRequest;
+import com.bankx.demo.transaction.dto.*;
 import com.bankx.demo.transaction.vo.TransactionVo;
 import org.springframework.data.domain.Pageable;
 
@@ -22,4 +19,8 @@ public interface TransactionService {
     List<TransactionVo> getTransactions(UUID userId, UUID accountId);
 
     PageResult<TransactionVo> search(UUID userId, TransactionSearchRequest request, Pageable pageable);
+
+    List<TransactionVo> getAllTransactions();
+
+    TransactionVo reverseTransaction(UUID transactionId, UUID operatorUserId, String reason);
 }

@@ -6,8 +6,8 @@ import com.bankx.demo.common.enums.RoleEnum;
 import com.bankx.demo.common.enums.UserStatus;
 import com.bankx.demo.common.exception.BaseException;
 import com.bankx.demo.common.utils.JwtUtils;
-import com.bankx.demo.security.Entity.Role;
-import com.bankx.demo.security.Entity.UserRole;
+import com.bankx.demo.security.entity.Role;
+import com.bankx.demo.security.entity.UserRole;
 import com.bankx.demo.security.properties.JwtProperties;
 import com.bankx.demo.security.dto.LoginRequest;
 import com.bankx.demo.security.dto.RegisterRequest;
@@ -115,7 +115,8 @@ public class AuthServiceImpl implements AuthService {
         // Save User cascades to UserProfile and UserRole
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), RoleEnum.ROLE_CUSTOMER.name());
+        String authorities = buildAuthoritiesString(customerRole);
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), authorities);
 
         log.info("Token TTL from properties: {}ms", jwtProperties.getTtl());
         // 存入 Redis，key = "token:{userId}", TTL = jwtProperties.getTtl() 毫秒
@@ -133,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
                 jwtProperties.getTtl(),
                 user.getId(),
                 user.getEmail(),
-                RoleEnum.ROLE_CUSTOMER.name());
+                authorities);
     }
 
     //--- login ---
@@ -238,6 +239,21 @@ public class AuthServiceImpl implements AuthService {
     }
 
     // -- helper --
+    /**
+     * Build a comma-separated authorities string from a Role entity.
+     * Includes both the role name (e.g. ROLE_CUSTOMER) and all its
+     * fine-grained permissions (e.g. ACCOUNT:READ_OWN, ACCOUNT:CREATE).
+     */
+    private String buildAuthoritiesString(Role role) {
+        StringBuilder sb = new StringBuilder(role.getName().name());
+        for (var rp : role.getRolePermissions()) {
+            sb.append(",")
+                    .append(rp.getPermission().getResource())
+                    .append(":")
+                    .append(rp.getPermission().getAction());
+        }
+        return sb.toString();
+    }
     private void sendEmail(String toEmail, String code){
         try{
             SimpleMailMessage message = new SimpleMailMessage();

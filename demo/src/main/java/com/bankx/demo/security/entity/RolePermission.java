@@ -1,4 +1,4 @@
-package com.bankx.demo.security.Entity;
+package com.bankx.demo.security.entity;
 
 import com.bankx.demo.common.base.BaseEntity;
 import io.swagger.v3.oas.annotations.media.Schema;

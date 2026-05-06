@@ -2,10 +2,7 @@ package com.bankx.demo.security.dto;
 
 import com.bankx.demo.common.base.BaseRequest;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -46,14 +43,17 @@ public class RegisterRequest extends BaseRequest {
     @Schema(example = "Doe")
     private String lastName;
 
+    @NotBlank(message = "Phone is required")
     @Size(max = 20, message = "Phone must be 20 characters or less")
     @Schema(example = "+12025551234")
     private String phone;
 
+    @NotNull(message = "Date of birth is required")
     @Past(message = "Date of birth must be in the past")
     @Schema(example = "1990-05-15")
     private LocalDate dateOfBirth;
 
+    @NotBlank(message = "Address is required")
     @Size(max = 100)
     @Schema(example = "123 Main St")
     private String addressLine1;
@@ -62,18 +62,22 @@ public class RegisterRequest extends BaseRequest {
     @Schema(example = "Apt 4B")
     private String addressLine2;
 
+    @NotBlank(message = "City is required")
     @Size(max = 50)
     @Schema(example = "Los Angeles")
     private String city;
 
+    @NotBlank(message = "State is required")
     @Size(min = 2, max = 2, message = "State must be a 2-letter code")
     @Schema(example = "CA")
     private String state;
 
+    @NotBlank(message = "Zip code is required")
     @Size(max = 10)
     @Schema(example = "90210")
     private String zipCode;
 
+    @NotBlank(message = "Country is required")
     @Size(min = 2, max = 2, message = "Country must be a 2-letter ISO code")
     @Schema(example = "US")
     private String country;

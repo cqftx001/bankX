@@ -2,7 +2,7 @@ package com.bankx.demo.admin;
 
 import com.bankx.demo.common.constant.SuperConstant;
 import com.bankx.demo.common.enums.RoleEnum;
-import com.bankx.demo.security.Entity.Role;
+import com.bankx.demo.security.entity.Role;
 import com.bankx.demo.security.dto.RegisterRequest;
 import com.bankx.demo.security.repository.RoleRepository;
 import com.bankx.demo.user.entity.User;

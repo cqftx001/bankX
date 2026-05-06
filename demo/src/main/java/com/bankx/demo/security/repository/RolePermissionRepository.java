@@ -1,6 +1,6 @@
 package com.bankx.demo.security.repository;
 
-import com.bankx.demo.security.Entity.RolePermission;
+import com.bankx.demo.security.entity.RolePermission;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

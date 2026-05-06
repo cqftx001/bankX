@@ -2,7 +2,7 @@ package com.bankx.demo.security.repository;
 
 import com.bankx.demo.common.enums.ActionEnum;
 import com.bankx.demo.common.enums.ResourceEnum;
-import com.bankx.demo.security.Entity.Permission;
+import com.bankx.demo.security.entity.Permission;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

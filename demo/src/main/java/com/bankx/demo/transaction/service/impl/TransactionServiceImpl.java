@@ -6,10 +6,7 @@ import com.bankx.demo.common.base.PageResult;
 import com.bankx.demo.common.enums.*;
 import com.bankx.demo.common.exception.BaseException;
 import com.bankx.demo.common.utils.PageableUtils;
-import com.bankx.demo.transaction.dto.DepositRequest;
-import com.bankx.demo.transaction.dto.TransactionSearchRequest;
-import com.bankx.demo.transaction.dto.TransferRequest;
-import com.bankx.demo.transaction.dto.WithDrawRequest;
+import com.bankx.demo.transaction.dto.*;
 import com.bankx.demo.transaction.entity.Transaction;
 import com.bankx.demo.transaction.repository.TransactionRepository;
 import com.bankx.demo.transaction.repository.TransactionSortFields;
@@ -28,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -98,6 +96,9 @@ public class TransactionServiceImpl implements TransactionService {
         return toVO(tx);
     }
 
+    /*
+        * Withdraw with optimistic locking retry
+     */
     @Override
     @Transactional
     @Retryable(retryFor = ObjectOptimisticLockingFailureException.class,
@@ -133,7 +134,9 @@ public class TransactionServiceImpl implements TransactionService {
                 tx.getId(), fromAccount.getId(), request.getAmount());
         return toVO(tx);
     }
-
+    /*
+        * Transfer with optimistic locking retry and deadlock prevention
+     */
     @Override
     @Transactional
     @Retryable(retryFor = ObjectOptimisticLockingFailureException.class,
@@ -187,6 +190,12 @@ public class TransactionServiceImpl implements TransactionService {
         return toVO(tx);
     }
 
+    /**
+     * Get transactions for an account with ownership check
+     * @param userId
+     * @param accountId
+     * @return
+     */
     @Override
     @Transactional(readOnly = true)
     public List<TransactionVo> getTransactions(UUID userId, UUID accountId) {
@@ -200,8 +209,206 @@ public class TransactionServiceImpl implements TransactionService {
                 .toList();
     }
 
-    // ─── Helpers ────────────────────────────────────────────
+    /**
+     * Get all transactions (permission only)
+     * @return
+     */
+    @Override
+    public List<TransactionVo> getAllTransactions() {
+        return transactionRepository.findAll()
+                .stream()
+                .map(this::toVO)
+                .toList();
+    }
 
+    /**
+     * Reverse a transaction.
+     *
+     * Naming convention in this method:
+     *   - "original..." refers to accounts/directions in the ORIGINAL transaction
+     *   - The reversal moves money in the OPPOSITE direction
+     */
+    @Override
+    @Transactional
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100)
+    )
+    public TransactionVo reverseTransaction(UUID transactionId, UUID operatorUserId, String reason) {
+        // 1. Find original transaction
+        Transaction originalTx = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new BaseException(
+                        ErrorCode.RESOURCE_NOT_FOUND, "Original transaction not found"));
+
+        // 2. Idempotency: cannot reverse an already-reversed transaction
+        if (Boolean.TRUE.equals(originalTx.getReversed())) {
+            throw new BaseException(ErrorCode.INVALID_REQUEST,
+                    "Transaction has already been reversed");
+        }
+
+        // 3. Only completed transactions can be reversed
+        if (originalTx.getTransactionStatus() != TransactionStatus.COMPLETED) {
+            throw new BaseException(ErrorCode.INVALID_REQUEST,
+                    "Only completed transactions can be reversed");
+        }
+
+        // 4. Do not reverse a reversal transaction (no double reversal)
+        if (originalTx.getTransactionType() == TransactionType.REVERSAL) {
+            throw new BaseException(ErrorCode.INVALID_REQUEST,
+                    "Cannot reverse a reversal transaction");
+        }
+
+        BigDecimal amount = originalTx.getAmount();
+        CurrencyEnum currency = originalTx.getCurrency();
+
+        // Use clear naming: originalFrom/originalTo match the ORIGINAL transaction's direction
+        Account originalFromAccount = originalTx.getFromAccount();
+        Account originalToAccount = originalTx.getToAccount();
+
+        Transaction reversalTx;
+
+        switch (originalTx.getTransactionType()) {
+            case DEPOSIT -> {
+                // Original: money went INTO originalToAccount
+                // Reversal: subtract money FROM that account
+                Account targetAccount = findActiveAccount(originalToAccount.getId());
+
+                if (targetAccount.getBalance().compareTo(amount) < 0) {
+                    log.warn("Reversing deposit with insufficient balance: accountId={}, balance={}, reversalAmount={}",
+                            targetAccount.getId(), targetAccount.getBalance(), amount);
+                }
+                targetAccount.setBalance(targetAccount.getBalance().subtract(amount));
+                accountRepository.save(targetAccount);
+
+                reversalTx = buildTransaction(
+                        TransactionType.REVERSAL,
+                        amount,
+                        targetAccount.getBalance(),
+                        null,
+                        buildReversalDescription(originalTx, reason),
+                        targetAccount,   // reversal from = original to
+                        null,
+                        currency
+                );
+            }
+            case WITHDRAW -> {
+                // Original: money went OUT of originalFromAccount
+                // Reversal: add money BACK to that account
+                Account targetAccount = findActiveAccount(originalFromAccount.getId());
+
+                targetAccount.setBalance(targetAccount.getBalance().add(amount));
+                accountRepository.save(targetAccount);
+
+                reversalTx = buildTransaction(
+                        TransactionType.REVERSAL,
+                        amount,
+                        targetAccount.getBalance(),
+                        null,
+                        buildReversalDescription(originalTx, reason),
+                        null,
+                        targetAccount,   // reversal to = original from
+                        currency
+                );
+            }
+            case TRANSFER -> {
+                // Original: originalFromAccount -> originalToAccount
+                // Reversal: originalToAccount -> originalFromAccount
+                if (originalFromAccount.getId().equals(originalToAccount.getId())) {
+                    throw new BaseException(ErrorCode.INVALID_REQUEST,
+                            "Cannot reverse transfer between same account");
+                }
+
+                // Deterministic loading order to prevent deadlocks
+                UUID firstId = originalFromAccount.getId().compareTo(originalToAccount.getId()) < 0
+                        ? originalFromAccount.getId() : originalToAccount.getId();
+                UUID secondId = originalFromAccount.getId().compareTo(originalToAccount.getId()) < 0
+                        ? originalToAccount.getId() : originalFromAccount.getId();
+
+                Account firstAccount = findActiveAccount(firstId);
+                Account secondAccount = findActiveAccount(secondId);
+
+                Account origFrom = firstId.equals(originalFromAccount.getId()) ? firstAccount : secondAccount;
+                Account origTo = firstId.equals(originalToAccount.getId()) ? firstAccount : secondAccount;
+
+                // Reversal: subtract from origTo, add to origFrom
+                if (origTo.getBalance().compareTo(amount) < 0) {
+                    log.warn("Reversing transfer with insufficient balance: accountId={}, balance={}, reversalAmount={}",
+                            origTo.getId(), origTo.getBalance(), amount);
+                }
+
+                // Always update balances regardless of sufficiency — forced reversal for consistency
+                origTo.setBalance(origTo.getBalance().subtract(amount));
+                origFrom.setBalance(origFrom.getBalance().add(amount));
+                accountRepository.save(origFrom);
+                accountRepository.save(origTo);
+
+                reversalTx = buildTransaction(
+                        TransactionType.REVERSAL,
+                        amount,
+                        origFrom.getBalance(),
+                        null,
+                        buildReversalDescription(originalTx, reason),
+                        origTo,     // reversal from = original to
+                        origFrom,   // reversal to = original from
+                        currency
+                );
+            }
+
+            default -> throw new BaseException(
+                    ErrorCode.INVALID_REQUEST,
+                    "Unsupported transaction type for reversal: " + originalTx.getTransactionType()
+            );
+        }
+
+        // Set reversal metadata on the NEW reversal transaction
+        reversalTx.setOriginalTransaction(originalTx);
+        reversalTx.setReversalReason(normalizeReason(reason));
+        reversalTx.setReversed(false);
+        reversalTx.setReversedAt(null);
+        reversalTx.setReversedBy(null);
+
+        transactionRepository.save(reversalTx);
+
+        // Mark the ORIGINAL transaction as reversed (audit trail)
+        originalTx.setReversed(true);
+        originalTx.setReversedAt(LocalDateTime.now());
+        originalTx.setReversedBy(operatorUserId);
+        originalTx.setReversalTransaction(reversalTx);
+        transactionRepository.save(originalTx);
+
+        log.info(
+                "Transaction reversed: originalTxId={}, reversalTxId={}, operatorId={}, amount={}",
+                originalTx.getId(),
+                reversalTx.getId(),
+                operatorUserId,
+                amount
+        );
+
+        return toVO(reversalTx);
+    }
+
+    // ─── Helpers ────────────────────────────────────────────
+    private String normalizeReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "No reason provided";
+        }
+
+        String trimmed = reason.trim();
+
+        if (trimmed.length() > 255) {
+            return trimmed.substring(0, 255);
+        }
+
+        return trimmed;
+    }
+
+    private String buildReversalDescription(Transaction originalTx, String reason) {
+        return "REVERSAL of transaction "
+                + originalTx.getTransactionNumber()
+                + ". Reason: "
+                + normalizeReason(reason);
+    }
     private Optional<TransactionVo> checkIdempotency(String idempotencyKey) {
         if (idempotencyKey == null) return Optional.empty();
         return transactionRepository.findByIdempotencyKey(idempotencyKey).map(this::toVO);
@@ -265,6 +472,19 @@ public class TransactionServiceImpl implements TransactionService {
                 .toAccountNumber(tx.getToAccount() != null ? tx.getToAccount().getAccountNumber() : null)
                 .description(tx.getDescription())
                 .createdAt(tx.getCreatedAt())
+
+                // Reversal fields
+                .reversed(tx.getReversed())
+                .originalTransactionId(tx.getOriginalTransaction() != null
+                        ? tx.getOriginalTransaction().getId()
+                        : null)
+                .reversalTransactionId(tx.getReversalTransaction() != null
+                        ? tx.getReversalTransaction().getId()
+                        : null)
+                .reversalReason(tx.getReversalReason())
+                .reversedAt(tx.getReversedAt())
+                .reversedBy(tx.getReversedBy())
+
                 .build();
     }
 }

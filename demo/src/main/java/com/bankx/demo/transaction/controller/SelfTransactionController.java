@@ -28,16 +28,20 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-@RequestMapping("/api/v1/transactions")
-@RequiredArgsConstructor
+/*
+    *      "TRANSACTION:READ_OWN", "TRANSACTION:CREATE"
+ */
 @RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/v1/me/transactions")
 @Tag(name = "Transactions", description = "Deposit, withdraw and transfer")
-public class TransactionController {
+public class SelfTransactionController {
 
     private final TransactionService transactionService;
 
     @GetMapping
     @Operation(summary = "Search current user's transactions with filters and pagination")
+    @PreAuthorize("hasAuthority('TRANSACTION:READ_OWN')")
     public ResponseEntity<ResponseResult<PageResult<TransactionVo>>> search(
             @ParameterObject TransactionSearchRequest searchRequest,
             @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)

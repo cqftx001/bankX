@@ -28,6 +28,10 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
 
+    /*
+        * Create Account
+        * Permission: ACCOUNT:CREATE
+     */
     @Override
     @Transactional
     public AccountVo createAccount(UUID userId, CreateAccountRequest request) {
@@ -49,6 +53,10 @@ public class AccountServiceImpl implements AccountService {
         return toVO(account);
     }
 
+    /*
+        * Get My Accounts
+        * Permission: ACCOUNT:READ_OWN
+     */
     @Override
     @Transactional(readOnly = true)
     public List<AccountVo> getMyAccounts(UUID userId) {
@@ -58,6 +66,10 @@ public class AccountServiceImpl implements AccountService {
                 .toList();
     }
 
+    /*
+        * Get Account By ID
+        * Permission: ACCOUNT:READ_OWN
+     */
     @Override
     @Transactional(readOnly = true)
     public AccountVo getAccountById(UUID userId, UUID accountId) {
@@ -70,6 +82,23 @@ public class AccountServiceImpl implements AccountService {
         return toVO(account);
     }
 
+    /*
+        * Get All Accounts
+        * Permission: ACCOUNT:READ_ALL
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<AccountVo> getAllAccounts() {
+        return accountRepository.findAll()
+                .stream()
+                .map(this::toVO)
+                .toList();
+    }
+
+    /*
+        * Freeze Account
+        * Permission: ACCOUNT:FREEZE
+     */
     @Override
     @Transactional
     public AccountVo freezeAccount(UUID accountId) {
@@ -85,6 +114,10 @@ public class AccountServiceImpl implements AccountService {
         return toVO(account);
     }
 
+    /*
+        * Unfreeze Account
+        * Permission: ACCOUNT:UNFREEZE
+     */
     @Override
     @Transactional
     public AccountVo unfreezeAccount(UUID accountId) {
@@ -101,6 +134,10 @@ public class AccountServiceImpl implements AccountService {
         return toVO(account);
     }
 
+    /*
+        * Unclose Account
+        * Permission: ACCOUNT:CLOSE
+     */
     @Override
     @Transactional
     public AccountVo uncloseAccount(UUID accountId) {
@@ -117,7 +154,10 @@ public class AccountServiceImpl implements AccountService {
         return toVO(account);
     }
 
-
+    /*
+        * Close Account
+        * Permission: ACCOUNT:CLOSE
+     */
     @Override
     @Transactional
     public AccountVo closeAccount(UUID accountId) {

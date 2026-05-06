@@ -54,4 +54,22 @@ public class TransactionVo {
 
     @Schema(description = "Transaction creation timestamp")
     private LocalDateTime createdAt;
+
+    @Schema(description = "Indicates if this transaction is a reversal transaction")
+    private Boolean reversed;
+
+    @Schema(description = "Original transaction id if this transaction is a reversal")
+    private UUID originalTransactionId;
+
+    @Schema(description = "Generated reversal transaction id if this transaction has been reversed")
+    private UUID reversalTransactionId;
+
+    @Schema(description = "Reason for reversal")
+    private String reversalReason;
+
+    @Schema(description = "When this transaction was reversed")
+    private LocalDateTime reversedAt;
+
+    @Schema(description = "User id who performed the reversal")
+    private UUID reversedBy;
 }

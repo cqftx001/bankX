@@ -22,4 +22,6 @@ public interface AccountService {
     AccountVo uncloseAccount(UUID accountId);
 
     AccountVo closeAccount(UUID accountId);
+
+    List<AccountVo> getAllAccounts();
 }
