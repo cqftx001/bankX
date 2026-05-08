@@ -245,7 +245,6 @@ public class UserProfileServiceImpl implements UserProfileService {
                 userId,
                 newEmail,
                 roles);
-
     }
 
     // -- helper --
