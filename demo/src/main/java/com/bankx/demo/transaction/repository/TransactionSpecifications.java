@@ -47,6 +47,24 @@ public final class TransactionSpecifications {
         return specs.stream().reduce(Specification::and).orElse(null);
     }
 
+    public static Specification<Transaction> buildSpecification(TransactionSearchRequest request){
+        List<Specification<Transaction>> specs = new ArrayList<>();
+
+        specs.add(notDeleted());
+
+        if (request != null) {
+            if (request.getAccountId() != null) specs.add(involvesAccount(request.getAccountId()));
+            if (request.getStartDate() != null)  specs.add(startDateGreaterThanOrEqualTo(request.getStartDate()));
+            if (request.getEndDate() != null)    specs.add(endDateLessThanOrEqualTo(request.getEndDate()));
+            if (request.getMinAmount() != null)  specs.add(minAmountGreaterThanOrEqualTo(request.getMinAmount()));
+            if (request.getMaxAmount() != null)  specs.add(maxAmountLessThanOrEqualTo(request.getMaxAmount()));
+            if (request.getType() != null)       specs.add(transactionTypeEquals(request.getType()));
+            if (request.getStatus() != null)     specs.add(transactionStatusEquals(request.getStatus()));
+        }
+
+        return combineWithAnd(specs);
+    }
+
     /**
      * 拼接账号查询条件
      * @param accountId

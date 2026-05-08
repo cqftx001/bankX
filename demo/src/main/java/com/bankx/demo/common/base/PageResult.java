@@ -97,9 +97,8 @@ public class PageResult<T> {
      */
     public <R> PageResult<R> map(Function<T, R> mapper) {
         Objects.requireNonNull(mapper, "mapper cannot be null");
-        List<R> mapped = items == null
-                ? List.of()
-                : items.stream().map(mapper).toList();
+        List<R> mapped = items == null ? List.of() : items.stream().map(mapper).toList();
+
         return PageResult.<R>builder()
                 .items(mapped)
                 .pageNumber(this.pageNumber)

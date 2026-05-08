@@ -47,7 +47,6 @@ public class TransactionServiceImpl implements TransactionService {
     public PageResult<TransactionVo> search(UUID userId,
                                             TransactionSearchRequest req,
                                             Pageable pageable) {
-
         // Step 1: validate sort fields against whitelist (rejects unsafe sorts with 400)
         Pageable safePageable = PageableUtils.sanitize(pageable, TransactionSortFields.ALLOWED);
 
@@ -58,6 +57,22 @@ public class TransactionServiceImpl implements TransactionService {
         Page<Transaction> page = transactionRepository.findAll(spec, safePageable);
 
         // Step 4: wrap into our API contract
+        return PageResult.from(page).map(this::toVO);
+    }
+
+    /**
+     * Get all transactions with pagination (for teller/admin use, no user filter)
+     * @param pageable
+     * @return
+     */
+    @Override
+    public PageResult<TransactionVo> getAllTransactions(TransactionSearchRequest request, Pageable pageable) {
+        Pageable safePageable = PageableUtils.sanitize(pageable, TransactionSortFields.ALLOWED);
+
+        Specification<Transaction> spec = TransactionSpecifications.buildSpecification(request);
+
+        Page<Transaction> page = transactionRepository.findAll(spec, safePageable);
+
         return PageResult.from(page).map(this::toVO);
     }
 

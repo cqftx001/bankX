@@ -4,8 +4,8 @@ import com.bankx.demo.common.base.ResponseResult;
 import com.bankx.demo.common.utils.RequestUtils;
 import com.bankx.demo.security.model.CustomUserDetails;
 import com.bankx.demo.security.vo.AuthResponse;
-import com.bankx.demo.user.UserProfileVo;
-import com.bankx.demo.user.dto.UpdateProfileRequest;
+import com.bankx.demo.user.vo.UserProfileVo;
+import com.bankx.demo.user.dto.UpdateMyProfileRequest;
 import com.bankx.demo.user.service.UserProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,14 +13,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/profile")
+@RequestMapping("/api/v1/me/profile")
 @RequiredArgsConstructor
 @Tag(name = "User Profile", description = "User Profile API")
 public class UserProfileController {
@@ -46,7 +45,7 @@ public class UserProfileController {
     @PreAuthorize("hasAuthority('USER_PROFILE:UPDATE')")
     public ResponseEntity<ResponseResult<UserProfileVo>> updateMyProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody UpdateProfileRequest req,
+            @Valid @RequestBody UpdateMyProfileRequest req,
             HttpServletRequest request
             ){
 

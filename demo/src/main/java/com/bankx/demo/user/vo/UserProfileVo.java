@@ -1,11 +1,9 @@
-package com.bankx.demo.user;
+package com.bankx.demo.user.vo;
 
-import com.bankx.demo.common.base.BaseVo;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data

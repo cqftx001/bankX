@@ -23,4 +23,6 @@ public interface TransactionService {
     List<TransactionVo> getAllTransactions();
 
     TransactionVo reverseTransaction(UUID transactionId, UUID operatorUserId, String reason);
+
+    PageResult<TransactionVo> getAllTransactions(TransactionSearchRequest request, Pageable pageable);
 }

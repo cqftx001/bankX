@@ -6,6 +6,7 @@ public enum ActionEnum {
     READ_ALL,
     CREATE,
     UPDATE,
+    UPDATE_ALL,
     DELETE,
     FREEZE,
     UNFREEZE,

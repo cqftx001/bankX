@@ -6,8 +6,9 @@ import com.bankx.demo.common.exception.BaseException;
 import com.bankx.demo.common.utils.JwtUtils;
 import com.bankx.demo.security.properties.JwtProperties;
 import com.bankx.demo.security.vo.AuthResponse;
-import com.bankx.demo.user.UserProfileVo;
-import com.bankx.demo.user.dto.UpdateProfileRequest;
+import com.bankx.demo.user.vo.UserProfileVo;
+import com.bankx.demo.user.dto.UpdateMyProfileRequest;
+import com.bankx.demo.user.dto.UpdateUserProfileRequest;
 import com.bankx.demo.user.entity.User;
 import com.bankx.demo.user.entity.UserProfile;
 import com.bankx.demo.user.repository.UserRepository;
@@ -44,16 +45,26 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Value("${spring.mail.username}")
     private String sender;
 
-
+    /**
+     * Get current user's profile
+     * @param userId
+     * @return
+     */
     @Override
     @Transactional(readOnly = true)
     public UserProfileVo getMyProfile(UUID userId) {
         return toVO(findUserById(userId));
     }
 
+    /**
+     * Update current user's profile (except email)
+     * @param userId
+     * @param request
+     * @return
+     */
     @Override
     @Transactional
-    public UserProfileVo updateMyProfile(UUID userId, UpdateProfileRequest request) {
+    public UserProfileVo updateMyProfile(UUID userId, UpdateMyProfileRequest request) {
         User user = findUserById(userId);
         UserProfile profile = user.getProfile();
 
@@ -62,10 +73,6 @@ public class UserProfileServiceImpl implements UserProfileService {
                     "Profile not found!");
         }
 
-        if (request.getFirstName() != null) profile.setFirstName(request.getFirstName());
-        if (request.getLastName() != null) profile.setLastName(request.getLastName());
-        if (request.getPhone() != null) profile.setPhone(request.getPhone());
-        if (request.getBirthDate() != null) profile.setBirthDate(request.getBirthDate());
         if (request.getAddressLine1() != null) profile.setAddressLine1(request.getAddressLine1());
         if (request.getAddressLine2() != null) profile.setAddressLine2(request.getAddressLine2());
         if (request.getCity() != null) profile.setCity(request.getCity());
@@ -77,6 +84,48 @@ public class UserProfileServiceImpl implements UserProfileService {
         log.info("Profile updated: userId={}", userId);
         return toVO(user);
     }
+
+    @Override
+    @Transactional
+    public UserProfileVo updateProfileByManager(UUID userId, UpdateUserProfileRequest request){
+        User user = findUserById(userId);
+        UserProfile profile = user.getProfile();
+
+        if(profile == null) throw new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Profile not found!");
+
+        // Tier 2: KYC sensitive fields
+        if (request.getFirstName() != null)  profile.setFirstName(request.getFirstName());
+        if (request.getLastName() != null)   profile.setLastName(request.getLastName());
+        if (request.getPhone() != null)      profile.setPhone(request.getPhone());
+        if (request.getBirthDate() != null)  profile.setBirthDate(request.getBirthDate());
+
+        // Email: manager can update directly (no verification flow)
+        if (request.getEmail() != null) {
+            String newEmail = request.getEmail().toLowerCase().trim();
+            if (!newEmail.equals(user.getEmail())) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new BaseException(ErrorCode.DUPLICATE_REQUEST, "Email already registered: " + newEmail);
+                }
+                String oldEmail = user.getEmail();
+                user.setEmail(newEmail);
+                redisTemplate.delete(SuperConstant.REDIS_TOKEN_PREFIX + userId);
+                log.info("Email changed by manager: userId={}, oldEmail={}, newEmail={}", userId, oldEmail, newEmail);
+            }
+        }
+
+        // Tier 1: Address fields
+        if (request.getAddressLine1() != null) profile.setAddressLine1(request.getAddressLine1());
+        if (request.getAddressLine2() != null) profile.setAddressLine2(request.getAddressLine2());
+        if (request.getCity() != null)         profile.setCity(request.getCity());
+        if (request.getState() != null)        profile.setState(request.getState());
+        if (request.getZipCode() != null)      profile.setPostalCode(request.getZipCode());
+        if (request.getCountry() != null)      profile.setCountry(request.getCountry());
+
+        userRepository.save(user);
+        log.info("Profile updated by manager: userId={}", userId);
+        return toVO(user);
+    }
+
 
     @Override
     public void requestEmailChange(UUID userId, String newEmail) {

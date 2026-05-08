@@ -1,18 +1,26 @@
 package com.bankx.demo.account.service.impl;
 
+import com.bankx.demo.account.dto.AccountSearchRequest;
 import com.bankx.demo.account.dto.CreateAccountRequest;
 import com.bankx.demo.account.entity.Account;
 import com.bankx.demo.account.repository.AccountRepository;
+import com.bankx.demo.account.repository.AccountSortFields;
+import com.bankx.demo.account.repository.AccountSpecifications;
 import com.bankx.demo.account.service.AccountService;
 import com.bankx.demo.account.vo.AccountVo;
+import com.bankx.demo.common.base.PageResult;
 import com.bankx.demo.common.enums.AccountStatus;
 import com.bankx.demo.common.enums.CurrencyEnum;
 import com.bankx.demo.common.enums.ErrorCode;
 import com.bankx.demo.common.exception.BaseException;
+import com.bankx.demo.common.utils.PageableUtils;
 import com.bankx.demo.user.entity.User;
 import com.bankx.demo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -178,6 +186,24 @@ public class AccountServiceImpl implements AccountService {
 
         return toVO(account);
     }
+
+    /**
+     * Get all accounts with pagination
+      * Permission: ACCOUNT:READ_ALL
+      * @param pageable
+     * @return
+     */
+    @Override
+    public PageResult<AccountVo> getAllAccounts(AccountSearchRequest request, Pageable pageable) {
+        Pageable safePageable = PageableUtils.sanitize(pageable, AccountSortFields.ALLOWED);
+
+        Specification<Account> specs = AccountSpecifications.buildSpecification(request);
+
+        Page<Account> page = accountRepository.findAll(specs, pageable);
+
+        return PageResult.from(page).map(this::toVO);
+    }
+
 
     // -- helper --
     private Account findAccountById(UUID accountId){

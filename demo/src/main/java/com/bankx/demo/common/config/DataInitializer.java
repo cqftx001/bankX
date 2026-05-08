@@ -47,7 +47,7 @@ public class DataInitializer implements CommandLineRunner {
                     ActionEnum.ASSIGN_ROLE, ActionEnum.FREEZE
             ),
             ResourceEnum.USER_PROFILE, List.of(
-                    ActionEnum.READ_OWN, ActionEnum.UPDATE
+                    ActionEnum.READ_OWN, ActionEnum.UPDATE, ActionEnum.UPDATE_ALL
             )
     );
 
@@ -55,7 +55,8 @@ public class DataInitializer implements CommandLineRunner {
     private static final Map<RoleEnum, List<String>> ROLE_PERMISSIONS = Map.of(
             RoleEnum.ROLE_CUSTOMER, List.of(
                     "ACCOUNT:READ_OWN", "ACCOUNT:CREATE",
-                    "TRANSACTION:CREATE", "TRANSACTION:READ_OWN"
+                    "TRANSACTION:CREATE", "TRANSACTION:READ_OWN",
+                    "USER_PROFILE:READ_OWN", "USER_PROFILE:UPDATE"
             ),
             RoleEnum.ROLE_TELLER, List.of(
                     "ACCOUNT:READ_OWN", "ACCOUNT:READ_ALL", "ACCOUNT:CREATE",
@@ -64,7 +65,8 @@ public class DataInitializer implements CommandLineRunner {
             RoleEnum.ROLE_MANAGER, List.of(
                     "ACCOUNT:READ_OWN", "ACCOUNT:READ_ALL", "ACCOUNT:CREATE", "ACCOUNT:FREEZE",
                     "TRANSACTION:CREATE", "TRANSACTION:READ_OWN", "TRANSACTION:READ_ALL",
-                    "AUDIT_LOG:READ"
+                    "AUDIT_LOG:READ",
+                    "USER_PROFILE:READ_OWN", "USER_PROFILE:UPDATE", "USER_PROFILE:UPDATE_ALL"
             ),
             RoleEnum.ROLE_ADMIN, List.of(
                     // Account
@@ -79,7 +81,7 @@ public class DataInitializer implements CommandLineRunner {
                     "USER:READ_OWN", "USER:READ_ALL", "USER:CREATE",
                     "USER:UPDATE", "USER:DELETE", "USER:ASSIGN_ROLE", "USER:FREEZE",
                     // Profile
-                    "USER_PROFILE:READ_OWN", "USER_PROFILE:UPDATE"
+                    "USER_PROFILE:READ_OWN", "USER_PROFILE:UPDATE", "USER_PROFILE:UPDATE_ALL"
             )
     );
 

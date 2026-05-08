@@ -39,7 +39,7 @@ public class UserProfile extends BaseEntity {
     private String lastName;
 
     //—— Contact —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
-    @Column(nullable = false, length = 20)
+    @Column(length = 20, nullable = false)
     @Schema(description = "Phone number")
     private String phone;
 

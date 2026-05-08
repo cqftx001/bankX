@@ -8,21 +8,28 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-@Schema(description = "Update profile request")
-public class UpdateProfileRequest {
+@Schema(description = "Update profile request by manager - can update all fields including sensitive ones")
+public class UpdateUserProfileRequest {
 
+    // Sensitive fields
     @Size(max = 50)
     private String firstName;
 
     @Size(max = 50)
     private String lastName;
 
-    @Size(max = 20)
-    private String phone;
-
     @Past(message = "Date of birth must be in the past")
     private LocalDate birthDate;
 
+    @Size(max = 20)
+    private String phone;
+
+    // Manager can change email directly, but regular users must go through email change process
+    @Size(max = 50)
+    private String email;
+
+
+    // Basic fields
     @Size(max = 100)
     private String addressLine1;
 
