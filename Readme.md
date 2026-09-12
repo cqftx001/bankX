@@ -2,6 +2,10 @@
 
 A full-stack banking system built with **Spring Boot 3 + JPA + Spring Security + Redis**, featuring Permission-Based Access Control (PBAC) with role-scoped URL routing.
 
+A short demo showcasing the core banking workflows of the application:
+
+![BankX Demo](./demo.gif)
+
 ## Tech Stack
 
 **Backend:** Java 17, Spring Boot 3, Spring Security (JWT + Redis blacklist), Spring Data JPA, PostgreSQL, Redis, Swagger/OpenAPI 3
